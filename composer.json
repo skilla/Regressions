@@ -1,8 +1,19 @@
 {
     "name":              "skilla/regressions",
-    "description":       "",
-    "require": {
+    "description":       "Simple linear regressions and multiple linear regressions",
+    "keywords":          ["Linear regression", "Multiple linear regressions"],
+    "type":              "library",
+    "license":           "GNU",
+
+
+  "require": {
         "php":           ">=5.3.0",
         "skilla/matrix": "1.*"
+    },
+
+    "autoload": {
+        "psr-0": {
+            "Skilla\\Regressions": "lib/"
+        }
     }
 }
