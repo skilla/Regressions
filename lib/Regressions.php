@@ -26,10 +26,22 @@ class Regressions
      */
     private $dependentVars;
 
+    /**
+     * @var string
+     */
+    private $fontName;
+
+    /**
+     * @var int
+     */
+    private $fontSize;
+
     public function __construct(MatrixBase $independentVars, MatrixBase $dependentVars)
     {
         $this->independentVars = $independentVars;
         $this->dependentVars = $dependentVars;
+        $this->fontName = __DIR__ . '/../fonts/OpenSans.ttf';
+        $this->fontSize = 100;
     }
 
     public function setIndependentVars(MatrixBase $independentVars)
@@ -59,8 +71,18 @@ class Regressions
             } else {
                 $text = 'X'.($a-1);
             }
-            
+            $this->imageTextCentered($image, $pos - $this->drawBoxSize, $pos + $this->drawBoxSize, $pos + $this->drawBoxSize - 1, $pos + $this->drawBoxSize - 1, 'Holalola');
         }
         imagepng($image, "test.png");
+    }
+
+    public function imageTextCentered($image, $x, $y, $x1, $y1, $text)
+    {
+        $tb = imagettfbbox($this->fontSize, 45, $this->fontName, $text);
+        var_dump($tb);
+        echo "\n";die();
+        $horizontal = ceil(($x1 - $x - $tb[2]) / 2); // lower left X coordinate for text
+        $vertical   = ceil(($y1 - $y + $tb[2]) / 2); // lower left X coordinate for text
+        imagettftext($im, 17, 0, $x, $y, $tc, 'airlock.ttf', 'Hello world!');
     }
 }
