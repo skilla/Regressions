@@ -41,7 +41,7 @@ class Regressions
         $this->independentVars = $independentVars;
         $this->dependentVars = $dependentVars;
         $this->fontName = __DIR__ . '/../fonts/OpenSans.ttf';
-        $this->fontSize = 100;
+        $this->fontSize = 30;
     }
 
     public function setIndependentVars(MatrixBase $independentVars)
@@ -66,23 +66,35 @@ class Regressions
             $pos = ($this->drawBoxSize + 1) * $a - 1;
             imageline($image, 0, $pos, $drawSize, $pos, $color);
             imageline($image, $pos, 0, $pos, $drawSize, $color);
+        }
+        for ($a=0; $a<$boxes; $a++) {
             if ($a==1) {
                 $text = 'Y';
             } else {
                 $text = 'X'.($a-1);
             }
-            $this->imageTextCentered($image, $pos - $this->drawBoxSize, $pos + $this->drawBoxSize, $pos + $this->drawBoxSize - 1, $pos + $this->drawBoxSize - 1, 'Holalola');
+            $pos = $this->drawBoxSize * $a;
+            $this->imageTextCentered($image, $color, $pos, $pos, $pos + $this->drawBoxSize, $pos + $this->drawBoxSize, 'Holalola');
+
         }
         imagepng($image, "test.png");
     }
 
-    public function imageTextCentered($image, $x, $y, $x1, $y1, $text)
+    public function imageTextCentered($image, $color, $x, $y, $x1, $y1, $text)
     {
-        $tb = imagettfbbox($this->fontSize, 45, $this->fontName, $text);
+        $angulo = 0;
+        $tb = imagettfbbox($this->fontSize, $angulo, $this->fontName, $text);
+        $minx = $tb[9] = min($tb[0], $tb[2], $tb[4], $tb[6]);
+        $maxx = $tb[10] = max($tb[0], $tb[2], $tb[4], $tb[6]);
+        $miny = $tb[11] = min($tb[1], $tb[3], $tb[5], $tb[7]);
+        $maxy = $tb[12] = max($tb[1], $tb[3], $tb[5], $tb[7]);
+        $width  = $tb[13] = abs($maxx-$minx);
+        $height = $tb[14] = abs($maxy-$miny);
         var_dump($tb);
-        echo "\n";die();
-        $horizontal = ceil(($x1 - $x - $tb[2]) / 2); // lower left X coordinate for text
-        $vertical   = ceil(($y1 - $y + $tb[2]) / 2); // lower left X coordinate for text
-        imagettftext($im, 17, 0, $x, $y, $tc, 'airlock.ttf', 'Hello world!');
+        var_dump(array($x, $y, $x1, $y1));
+        $horizontal = $x  + ceil(($x1 - $x - $width) / 2); // lower left X coordinate for text
+        $vertical   = $y1 - ceil(($y1 - $y - $height) / 2); // lower left Y coordinate for text
+        imagettftext($image, $this->fontSize, $angulo, $horizontal, $vertical, $color, $this->fontName, $text);
+        imagettftext($image, $this->fontSize, 0, $x, $y, $color, $this->fontName, $text);
     }
 }
