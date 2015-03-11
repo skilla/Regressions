@@ -98,14 +98,14 @@ class Regressions
                     continue;
                 }
                 if ($a==0) {
-                    $y = $this->dependentVars->getRow(1);
-                } else {
-                    $y = $this->independentVars->getRow($a);
-                }
-                if ($b==0) {
                     $x = $this->dependentVars->getRow(1);
                 } else {
-                    $x = $this->independentVars->getRow($b);
+                    $x = $this->independentVars->getRow($a);
+                }
+                if ($b==0) {
+                    $y = $this->dependentVars->getRow(1);
+                } else {
+                    $y = $this->independentVars->getRow($b);
                 }
                 $this->drawDotPlot(
                     $image,
