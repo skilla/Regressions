@@ -28,6 +28,16 @@ class Regressions
     private $dependentVars;
 
     /**
+     * @var array
+     */
+    private $independentTitles;
+
+    /**
+     * @var array
+     */
+    private $dependentTitle;
+
+    /**
      * @var string
      */
     private $fontName;
@@ -37,10 +47,16 @@ class Regressions
      */
     private $fontSize;
 
-    public function __construct(MatrixBase $independentVars, MatrixBase $dependentVars)
-    {
+    public function __construct(
+        MatrixBase $independentVars,
+        MatrixBase $dependentVars,
+        array $independentTitles = null,
+        array $dependentTitle = null
+    ) {
         $this->independentVars = $independentVars;
         $this->dependentVars = $dependentVars;
+        $this->independentTitles = $independentTitles;
+        $this->dependentTitle = $dependentTitle;
         $this->fontName = __DIR__ . '/../fonts/OpenSans.ttf';
         $this->fontSize = 30;
     }
@@ -70,14 +86,15 @@ class Regressions
         }
         for ($a=0; $a<$boxes; $a++) {
             if ($a==0) {
-                $text = 'Y';
+                $text = isset($this->dependentTitle[0]) ? $this->dependentTitle[0] : 'Y';
             } else {
-                $text = 'X'.$a;
+                $text = isset($this->independentTitles[$a-1]) ? $this->independentTitles[$a-1] : 'X'.$a;
             }
             $pos = $this->drawBoxSize * $a;
             $this->imageTextCentered(
                 $image,
                 $color,
+                45,
                 $this->fontSize,
                 $this->fontName,
                 $pos,
@@ -124,9 +141,8 @@ class Regressions
         imagepng($image, "test.png");
     }
 
-    public function imageTextCentered($image, $color, $fontSize, $fontName, $x, $y, $x1, $y1, $text)
+    public function imageTextCentered($image, $color, $angulo, $fontSize, $fontName, $x, $y, $x1, $y1, $text)
     {
-        $angulo     = 0;
         $tb         = imagettfbbox($fontSize, $angulo, $fontName, $text);
         $minx       = $tb[9] = min($tb[0], $tb[2], $tb[4], $tb[6]);
         $maxx       = $tb[10] = max($tb[0], $tb[2], $tb[4], $tb[6]);
@@ -179,6 +195,7 @@ class Regressions
         $this->imageTextCentered(
             $image,
             $colorFormula,
+            0,
             $this->fontSize/3,
             $this->fontName,
             $x,
@@ -190,7 +207,7 @@ class Regressions
 
     }
 
-    public function regression(MatrixBase $x, MatrixBase $y, $tipo='lineal')
+    public function regression(MatrixBase $x, MatrixBase $y, $tipo = 'lineal')
     {
         $sx  = 0.0;
         $sy  = 0.0;

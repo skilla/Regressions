@@ -57,7 +57,7 @@ class MatrixBaseTest extends \PHPUnit_Framework_TestCase
         $dependent->setPoint(1, 9, 29);
         $dependent->setPoint(1, 10, 31);
 
-        $this->regression = new Regressions($independent, $dependent);
+        $this->regression = new Regressions($independent, $dependent, array('Ratio inmuebles', 'Ratio fotos'), array('Bajas'));
         $this->regression->generateDraw();
     }
 }
