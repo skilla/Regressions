@@ -47,9 +47,19 @@ class Regressions
      */
     private $fontSize;
 
+    /**
+     * Constructor de la clase, los parámetros son opcionales y se pueden asignar posteriormente mediante los métodos,
+     * para el correcto funcionamiento de la clase los valores que se han de asignar como mínimo son $independentVars y
+     * $dependentVars.
+     *
+     * @param MatrixBase $independentVars
+     * @param MatrixBase $dependentVars
+     * @param array $independentTitles
+     * @param array $dependentTitle
+     */
     public function __construct(
-        MatrixBase $independentVars,
-        MatrixBase $dependentVars,
+        MatrixBase $independentVars = null,
+        MatrixBase $dependentVars = null,
         array $independentTitles = null,
         array $dependentTitle = null
     ) {
@@ -61,17 +71,56 @@ class Regressions
         $this->fontSize = 30;
     }
 
+    /**
+     * Asigna la matriz de la(s) variable(s) independiente(s) "x(s)"
+     *
+     * @param MatrixBase $independentVars
+     */
     public function setIndependentVars(MatrixBase $independentVars)
     {
         $this->independentVars = $independentVars;
     }
 
+    /**
+     * Asigna la matriz de la variable dependiente "y"
+     *
+     * @param MatrixBase $dependentVars
+     */
     public function setDependentVar(MatrixBase $dependentVars)
     {
         $this->dependentVars = $dependentVars;
     }
 
-    public function generateDraw()
+    /**
+     * Asigna un array (opcional) con los títulos para las variables independientes $array[0] => X1,$array[1] => X2
+     *
+     * @param array $independentTitles
+     */
+    public function setIndependentTitles(array $independentTitles)
+    {
+        $this->independentTitles = $independentTitles;
+    }
+
+    /**
+     * Asigna un array (opcional) con el título pala la variable dependiente $array[0] => Y
+     *
+     * @param array $dependentTitle
+     */
+    public function setDependentTitle(array $dependentTitle)
+    {
+        $this->dependentTitle = $dependentTitle;
+    }
+
+    /**
+     * Genera un gráfico con todas las combinaciones de gráficas entre todas las "x" y la "y", ej: f(x1,x2) = y
+     * generará un gráfico con 6 gráficas (x1,y), (x1,x2), (x2,y), (x2,x1), (y,x1), (y,x2).
+     * f(x1,x2,x3) = y generará 12 gráficas.
+     * Las gráficas maximizaran el espacio de dibujo disponible, mostrarán la línea de tendencia, y la fórmula con ß0
+     * ß1 y R2
+     *
+     * @param string $filename
+     */
+    public function generateDraw($filename = null)
     {
         $boxes = $this->independentVars->getNumRows() + $this->dependentVars->getNumRows();
         $drawSize = ($this->drawBoxSize + 1) * $boxes - 2;
@@ -138,10 +187,14 @@ class Regressions
                 );
             }
         }
-        imagepng($image, "test.png");
+        if (is_null($filename)) {
+            $filename = tempnam();
+        }
+        imagepng($image, $filename);
+        return $filename;
     }
 
-    public function imageTextCentered($image, $color, $angulo, $fontSize, $fontName, $x, $y, $x1, $y1, $text)
+    private function imageTextCentered($image, $color, $angulo, $fontSize, $fontName, $x, $y, $x1, $y1, $text)
     {
         $tb         = imagettfbbox($fontSize, $angulo, $fontName, $text);
         $minx       = $tb[9] = min($tb[0], $tb[2], $tb[4], $tb[6]);
@@ -155,7 +208,19 @@ class Regressions
         imagettftext($image, $fontSize, $angulo, $horizontal, $vertical, $color, $fontName, $text);
     }
 
-    public function drawDotPlot($image, $colorPoints, $colorLine, $colorFormula, $x, $y, $x1, $y1, MatrixBase $matrixX, MatrixBase $matrixY)
+    /**
+     * @param $image
+     * @param int $colorPoints
+     * @param int $colorLine
+     * @param int $colorFormula
+     * @param int $x
+     * @param int $y
+     * @param int $x1
+     * @param int $y1
+     * @param MatrixBase $matrixX
+     * @param MatrixBase $matrixY
+     */
+    private function drawDotPlot($image, $colorPoints, $colorLine, $colorFormula, $x, $y, $x1, $y1, MatrixBase $matrixX, MatrixBase $matrixY)
     {
         $width   = $x1 -$x;
         $height  = $y1 -$y;
@@ -166,12 +231,12 @@ class Regressions
         $minY    = min($arrayY[1]);
         $maxY    = max($arrayY[1]);
 
-        $data    = $this->regression($matrixX, $matrixY);
+        $data    = $this->regressionSimple($matrixX, $matrixY);
         var_dump($data);
-        $minY    = min($minY, $data['ordenada'] + $data['pendiente'] * $minX);
-        $minY    = min($minY, $data['ordenada'] + $data['pendiente'] * $maxX);
-        $maxY    = max($maxY, $data['ordenada'] + $data['pendiente'] * $minX);
-        $maxY    = max($maxY, $data['ordenada'] + $data['pendiente'] * $maxX);
+        $minY    = min($minY, $data['B0'] + $data['B1'] * $minX);
+        $minY    = min($minY, $data['B0'] + $data['B1'] * $maxX);
+        $maxY    = max($maxY, $data['B0'] + $data['B1'] * $minX);
+        $maxY    = max($maxY, $data['B0'] + $data['B1'] * $maxX);
 
         $factorX = $width / abs($maxX - $minX);
         $factorY = $height / abs($maxY - $minY);
@@ -188,9 +253,9 @@ class Regressions
         }
 
         $posX1 = $x  + (($minX - $minX) * $factorX);
-        $posY1 = $y1 - ((($data['ordenada'] + $data['pendiente'] * $minX) - $minY) * $factorY);
+        $posY1 = $y1 - ((($data['B0'] + $data['B1'] * $minX) - $minY) * $factorY);
         $posX2 = $x  + (($maxX - $minX) * $factorX);
-        $posY2 = $y1 - ((($data['ordenada'] + $data['pendiente'] * $maxX) - $minY) * $factorY);
+        $posY2 = $y1 - ((($data['B0'] + $data['B1'] * $maxX) - $minY) * $factorY);
         imageline($image, $posX1, $posY1, $posX2, $posY2, $colorLine);
         $this->imageTextCentered(
             $image,
@@ -202,12 +267,27 @@ class Regressions
             $y,
             $x1,
             $y1,
-            'y='.round($data['ordenada'], 3).'+'.round($data['pendiente'], 3)."x\nR2=".round($data['r2'], 3)
+            'y='.round($data['B0'], 3).'+'.round($data['B1'], 3)."x\nR2=".round($data['r2'], 3)
         );
 
     }
 
-    public function regression(MatrixBase $x, MatrixBase $y, $tipo = 'lineal')
+    public function regresion($tipo = 'lineal')
+    {
+        if ($this->independentVars->getNumRows()==1) {
+            return $this->regressionSimple($this->independentVars, $this->dependentVars, $tipo);
+        }
+        return $this->regresionMultiple($this->independentVars, $this->dependentVars, $tipo);
+    }
+
+    /**
+     * Genera los datos de regresión para una variable dependiente "Y" y una única variable independiente "x"
+     * @param MatrixBase $x
+     * @param MatrixBase $y
+     * @param string $tipo
+     * @return array
+     */
+    public function regressionSimple(MatrixBase $x, MatrixBase $y, $tipo = 'lineal')
     {
         $sx  = 0.0;
         $sy  = 0.0;
@@ -238,8 +318,22 @@ class Regressions
         $correlacion = $dpxy/sqrt($dsx2*$dsy2);
         return array(
             'tipo'        => $tipo,
-            'pendiente'   => $pendiente,
-            'ordenada'    => $ordenada,
+            'B0'          => $ordenada,
+            'B1'          => $pendiente,
+            'correlacion' => $correlacion,
+            'r2'          => pow($correlacion, 2),
+        );
+    }
+
+    public function regresionMultiple(MatrixBase $x, MatrixBase $y, $tipo = 'lineal')
+    {
+        $ordenada    = 0;
+        $pendiente   = 0;
+        $correlacion = 0;
+        return array(
+            'tipo'        => $tipo,
+            'B0'          => $ordenada,
+            'B1'          => $pendiente,
             'correlacion' => $correlacion,
             'r2'          => pow($correlacion, 2),
         );
