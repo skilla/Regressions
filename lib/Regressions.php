@@ -188,7 +188,7 @@ class Regressions
             }
         }
         if (is_null($filename)) {
-            $filename = tempnam();
+            $filename = 'test.png';
         }
         imagepng($image, $filename);
         return $filename;
@@ -232,7 +232,7 @@ class Regressions
         $maxY    = max($arrayY[1]);
 
         $data    = $this->regressionSimple($matrixX, $matrixY);
-        var_dump($data);
+
         $minY    = min($minY, $data['B0'] + $data['B1'] * $minX);
         $minY    = min($minY, $data['B0'] + $data['B1'] * $maxX);
         $maxY    = max($maxY, $data['B0'] + $data['B1'] * $minX);
@@ -244,7 +244,6 @@ class Regressions
         for ($abscisas=1; $abscisas<=$matrixX->getNumCols(); $abscisas++) {
             $posX = $x + (($arrayX[1][$abscisas] - $minX) * $factorX);
             $posY = $y1 - (($arrayY[1][$abscisas] - $minY) * $factorY);
-            echo  "($posX, $posY\n";
 
             imagesetpixel($image, $posX, $posY, $colorPoints);
             imagesetpixel($image, $posX+1, $posY, $colorPoints);
@@ -330,12 +329,79 @@ class Regressions
         $ordenada    = 0;
         $pendiente   = 0;
         $correlacion = 0;
-        return array(
-            'tipo'        => $tipo,
-            'B0'          => $ordenada,
-            'B1'          => $pendiente,
-            'correlacion' => $correlacion,
-            'r2'          => pow($correlacion, 2),
-        );
+
+        $newX = new MatrixBase($x->getNumRows()+1, $x->getNumCols());
+        for ($m=1; $m<=$newX->getNumRows(); $m++) {
+            for ($n=1; $n<=$newX->getNumCols(); $n++) {
+                $newX->setPoint($m, $n, $m==1 ? 1 : $x->getPoint($m-1, $n));
+            }
+        }
+        $B = new MatrixBase(1, $newX->getNumRows());
+        $P = new MatrixBase($newX->getNumRows(), $newX->getNumRows());
+        for ($i=1; $i<=$newX->getNumRows(); $i++) {
+            $sum = 0;
+            for ($j = 1; $j <= $newX->getNumCols(); $j++) {
+                $sum += $newX->getPoint($i, $j) * $y->getPoint(1, $j);
+            }
+            $B->setPoint(1, $i, $sum);
+
+            for ($k=1; $k<=$newX->getNumRows(); $k++) {
+                $sum = 0;
+                for ($j = 1; $j <= $newX->getNumCols(); $j++) {
+                    $sum += $newX->getPoint($i, $j) * $newX->getPoint($k, $j);
+                    $P->setPoint($i, $k, $sum);
+                }
+            }
+        }
+        $P = $P->inversa();
+        $R = array();
+        for ($m=1; $m<=$P->getNumRows(); $m++) {
+            $sum = 0;
+            for ($n=1; $n<=$P->getNumCols(); $n++) {
+                $sum += $P->getPoint($m, $n) * $B->getPoint(1, $n);
+            }
+            $R[$m] = $sum;
+        }
+
+        $result = array();
+        $result['tipo']        = $tipo;
+
+        for ($m=1; $m<=count($R); $m++) {
+            $result['B'.($m-1)] = $R[$m];
+        }
+
+        unset($newX, $B, $P);
+
+        $predicted = array();
+        $residual  = array();
+        $SE = 0;
+        $ST = 0;
+
+        for ($n=1; $n<=$x->getNumCols(); $n++) {
+            $Y = $R[1];
+            for ($m=1; $m<=$x->getNumRows(); $m++) {
+                $Y += $R[$m+1] * $x->getPoint($m, $n);
+            }
+            $predicted[$n]  = $Y;
+            $residual[$n]   = $y->getPoint(1, $n) - $predicted[$n];
+            $SE            += $residual[$n];
+            $ST            += $y->getPoint(1, $n);
+        }
+
+        $MSE = $SE / $x->getNumCols();
+        $MST = $ST / $x->getNumCols();
+        $SSE = 0;
+        $SST = 0;
+        for ($n=1; $n<=$x->getNumCols(); $n++) {
+            $SSE += ($residual[$n] - $MSE) * ($residual[$n] - $MSE);
+            $SST += ($y->getPoint(1, $n) - $MST) * ($y->getPoint(1, $n) - $MST);
+        }
+        $FR = (($x->getNumCols() - $x->getNumRows() - 1) * ($SST - $SSE)) / ($x->getNumRows() * $SSE) ;
+        $RRSQ = 1 - ($SSE / $SST);
+
+        $result['correlacion']  = pow($RRSQ, 1/2);
+        $result['r2']           = $RRSQ;
+        $result['estadisticoF'] = $FR;
+        return $result;
     }
 }

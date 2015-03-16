@@ -57,7 +57,36 @@ class MatrixBaseTest extends \PHPUnit_Framework_TestCase
         $dependent->setPoint(1, 9, 29);
         $dependent->setPoint(1, 10, 31);
 
-        $this->regression = new Regressions($independent, $dependent, array('Ratio inmuebles', 'Ratio fotos'), array('Bajas'));
+        $this->regression = new Regressions(
+            $independent,
+            $dependent,
+            array('Ratio inmuebles', 'Ratio fotos'),
+            array('Bajas')
+        );
         $this->regression->generateDraw();
+        $this->assertFileExists('test.png');
+
+        $result = $this->regression->regresion('lineal');
+        $this->assertArrayHasKey('B0', $result);
+        $this->assertArrayHasKey('B1', $result);
+        $this->assertArrayHasKey('B2', $result);
+        $this->assertArrayHasKey('correlacion', $result);
+        $this->assertArrayHasKey('r2', $result);
+
+        if (isset($result['B0'])) {
+            $this->assertEquals(25.5044, round($result['B0'], 4));
+        }
+        if (isset($result['B1'])) {
+            $this->assertEquals(-0.1320, round($result['B1'], 4));
+        }
+        if (isset($result['B2'])) {
+            $this->assertEquals(-0.3928, round($result['B2'], 4));
+        }
+        if (isset($result['correlacion'])) {
+            $this->assertEquals(0.2385, round($result['correlacion'], 4));
+        }
+        if (isset($result['r2'])) {
+            $this->assertEquals(0.0569, round($result['r2'], 4));
+        }
     }
 }
