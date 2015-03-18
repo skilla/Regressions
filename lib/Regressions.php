@@ -5,10 +5,10 @@
  * Date: 8/3/15
  * Time: 19:12
  */
-namespace skilla\regressions;
+namespace Skilla\Regressions;
 
-use skilla\matrix\MatrixBase;
-use skilla\regressions\Exception;
+use Skilla\Matrix\MatrixBase;
+use Skilla\Regressions\Exception;
 
 class Regressions
 {

@@ -5,7 +5,7 @@
  * Date: 11/03/15
  * Time: 15:44
  */
-namespace skilla\regressions\Exception;
+namespace Skilla\Regressions\Exception;
 
 class Exception extends \Exception
 {

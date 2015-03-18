@@ -6,10 +6,10 @@
 * Time: 16:00
 */
 
-namespace skilla\regegressions\test;
+namespace Skilla\Regegressions\Test;
 
-use skilla\matrix\MatrixBase;
-use skilla\regressions\Regressions;
+use Skilla\Matrix\MatrixBase;
+use Skilla\Regressions\Regressions;
 
 include_once "vendor/skilla/matrix/lib/MatrixBase.php";
 include_once "lib/Regressions.php";
