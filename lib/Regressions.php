@@ -61,6 +61,7 @@ class Regressions
      * @param MatrixBase $dependentVars
      * @param array $independentTitles
      * @param array $dependentTitle
+     * @param int|null $precision
      */
     public function __construct(
         MatrixBase $independentVars = null,
@@ -225,6 +226,9 @@ class Regressions
     }
 
     /**
+     * Esta función no está adaptada a bcmath pues se supone que los datos provenientes de la regresión tiene unos
+     * valores aceptables dentro de los rangos de valores de las variables de PHP
+     *
      * @param $image
      * @param int $colorPoints
      * @param int $colorLine
@@ -256,26 +260,6 @@ class Regressions
         $arrayY  = $matrixY->getArray();
         $minY    = min($arrayY[1]);
         $maxY    = max($arrayY[1]);
-
-
-
-
-/*
-        var_dump(array(
-            $width,
-            $height,
-            $arrayX,
-            $minX,
-            $maxX,
-            $arrayY,
-            $minY,
-            $maxY,
-        ));
-*/
-
-
-
-
 
         $data    = $this->regressionSimple($matrixX, $matrixY);
 
@@ -314,7 +298,6 @@ class Regressions
             $y1,
             'y='.round($data['B0'], 3).'+'.round($data['B1'], 3)."x\nR2=".round($data['r2'], 3)
         );
-
     }
 
     public function regresion($tipo = 'lineal')
