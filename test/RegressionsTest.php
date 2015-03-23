@@ -20,7 +20,7 @@ class MatrixBaseTest extends \PHPUnit_Framework_TestCase
 
     public function testConstruct()
     {
-        $independent = new MatrixBase(2, 10);
+        $independent = new MatrixBase(2, 10, 50);
 
         $independent->setPoint(1, 1, 8);
         $independent->setPoint(1, 2, 7);
@@ -44,7 +44,7 @@ class MatrixBaseTest extends \PHPUnit_Framework_TestCase
         $independent->setPoint(2, 9, 13);
         $independent->setPoint(2, 10, 4);
 
-        $dependent   = new MatrixBase(1, 10);
+        $dependent   = new MatrixBase(1, 10, 50);
 
         $dependent->setPoint(1, 1, 8);
         $dependent->setPoint(1, 2, 9);
@@ -61,7 +61,8 @@ class MatrixBaseTest extends \PHPUnit_Framework_TestCase
             $independent,
             $dependent,
             array('Ratio inmuebles', 'Ratio fotos'),
-            array('Bajas')
+            array('Bajas'),
+            50
         );
         $this->regression->generateDraw();
         $this->assertFileExists('test.png');

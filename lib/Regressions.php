@@ -48,6 +48,11 @@ class Regressions
     private $fontSize;
 
     /**
+     * @var int $precision
+     */
+    private $precision;
+
+    /**
      * Constructor de la clase, los parámetros son opcionales y se pueden asignar posteriormente mediante los métodos,
      * para el correcto funcionamiento de la clase los valores que se han de asignar como mínimo son $independentVars y
      * $dependentVars.
@@ -61,7 +66,8 @@ class Regressions
         MatrixBase $independentVars = null,
         MatrixBase $dependentVars = null,
         array $independentTitles = null,
-        array $dependentTitle = null
+        array $dependentTitle = null,
+        $precision = null
     ) {
         $this->independentVars = $independentVars;
         $this->dependentVars = $dependentVars;
@@ -69,6 +75,7 @@ class Regressions
         $this->dependentTitle = $dependentTitle;
         $this->fontName = __DIR__ . '/../fonts/OpenSans.ttf';
         $this->fontSize = 30;
+        $this->precision = is_null($precision) ? 10 : (int)$precision;
     }
 
     /**
@@ -102,13 +109,21 @@ class Regressions
     }
 
     /**
-     * Asigna un array (opcional) con el título pala la variable dependiente $array[0] => Y
+     * Asigna un array (opcional) con el título para la variable dependiente $array[0] => Y
      *
      * @param array $dependentTitle
      */
     public function setDependentTitle(array $dependentTitle)
     {
         $this->dependentTitle = $dependentTitle;
+    }
+
+    /**
+     * @param int $precision
+     */
+    public function setPrecision($precision)
+    {
+        $this->precision = (int)$precision;
     }
 
     /**
@@ -119,6 +134,7 @@ class Regressions
      * ß1 y R2
      *
      * @param string $filename
+     * @return string
      */
     public function generateDraw($filename = null)
     {
@@ -220,8 +236,18 @@ class Regressions
      * @param MatrixBase $matrixX
      * @param MatrixBase $matrixY
      */
-    private function drawDotPlot($image, $colorPoints, $colorLine, $colorFormula, $x, $y, $x1, $y1, MatrixBase $matrixX, MatrixBase $matrixY)
-    {
+    private function drawDotPlot(
+        $image,
+        $colorPoints,
+        $colorLine,
+        $colorFormula,
+        $x,
+        $y,
+        $x1,
+        $y1,
+        MatrixBase $matrixX,
+        MatrixBase $matrixY
+    ) {
         $width   = $x1 -$x;
         $height  = $y1 -$y;
         $arrayX  = $matrixX->getArray();
@@ -230,6 +256,26 @@ class Regressions
         $arrayY  = $matrixY->getArray();
         $minY    = min($arrayY[1]);
         $maxY    = max($arrayY[1]);
+
+
+
+
+/*
+        var_dump(array(
+            $width,
+            $height,
+            $arrayX,
+            $minX,
+            $maxX,
+            $arrayY,
+            $minY,
+            $maxY,
+        ));
+*/
+
+
+
+
 
         $data    = $this->regressionSimple($matrixX, $matrixY);
 
@@ -288,83 +334,151 @@ class Regressions
      */
     public function regressionSimple(MatrixBase $x, MatrixBase $y, $tipo = 'lineal')
     {
-        $sx  = 0.0;
-        $sy  = 0.0;
-        $sx2 = 0.0;
-        $sy2 = 0.0;
-        $pxy = 0.0;
+        $precision = $this->precision;
+        $sx        = bcadd(0.0, 0.0, $precision);
+        $sy        = bcadd(0.0, 0.0, $precision);
+        $sx2       = bcadd(0.0, 0.0, $precision);
+        $sy2       = bcadd(0.0, 0.0, $precision);
+        $pxy       = bcadd(0.0, 0.0, $precision);
         for ($a=1; $a<=$x->getNumCols(); $a++) {
-            $sx  += $x->getPoint(1, $a);
-            $sy  += $y->getPoint(1, $a);
-            $sx2 += $x->getPoint(1, $a) * $x->getPoint(1, $a);
-            $sy2 += $y->getPoint(1, $a) * $y->getPoint(1, $a);
-            $pxy += $x->getPoint(1, $a) * $y->getPoint(1, $a);
+            $sx  = bcadd($sx, $x->getPoint(1, $a, $precision));
+            $sy  = bcadd($sy, $y->getPoint(1, $a, $precision));
+            $sx2 = bcadd(
+                $sx2,
+                bcmul($x->getPoint(1, $a, $precision), $x->getPoint(1, $a, $precision), $precision),
+                $precision
+            );
+            $sy2 = bcadd(
+                $sy2,
+                bcmul($y->getPoint(1, $a, $precision), $y->getPoint(1, $a, $precision), $precision),
+                $precision
+            );
+            $pxy = bcadd(
+                $pxy,
+                bcmul($x->getPoint(1, $a, $precision), $y->getPoint(1, $a, $precision), $precision),
+                $precision
+            );
         }
-        $pendiente = ($x->getNumCols()*$pxy-$sx*$sy)/($x->getNumCols()*$sx2-$sx*$sx);
-        $ordenada  = ($sy-$pendiente*$sx)/$x->getNumCols();
+        $pendiente = bcdiv(
+            bcsub(
+                bcmul($x->getNumCols(), $pxy, $precision),
+                bcmul($sx, $sy, $precision),
+                $precision
+            ),
+            bcsub(
+                bcmul($x->getNumCols(), $sx2, $precision),
+                bcmul($sx, $sx, $precision),
+                $precision
+            ),
+            $precision
+        );
+        $ordenada  = bcdiv(
+            bcsub($sy, bcmul($pendiente, $sx, $precision), $precision),
+            $x->getNumCols(),
+            $precision
+        );
 
-        $mediaX    = $sx / $x->getNumCols();
-        $mediaY    = $sy / $x->getNumCols();
-        $dpxy      = 0.0;
-        $dsx2      = 0.0;
-        $dsy2      = 0.0;
+        $mediaX    = bcdiv($sx, $x->getNumCols(), $precision);
+        $mediaY    = bcdiv($sy, $x->getNumCols(), $precision);
+        $dpxy      = bcadd(0.0, 0.0, $precision);
+        $dsx2      = bcadd(0.0, 0.0, $precision);
+        $dsy2      = bcadd(0.0, 0.0, $precision);
         for ($a=1; $a<=$x->getNumCols(); $a++) {
-            $dpxy += ($x->getPoint(1, $a) - $mediaX) * ($y->getPoint(1, $a) - $mediaY);
-            $dsx2 += ($x->getPoint(1, $a) - $mediaX) * ($x->getPoint(1, $a) - $mediaX);
-            $dsy2 += ($y->getPoint(1, $a) - $mediaY) * ($y->getPoint(1, $a) - $mediaY);
+            $dpxy = bcadd(
+                $dpxy,
+                bcmul(
+                    bcsub($x->getPoint(1, $a, $precision), $mediaX, $precision),
+                    bcsub($y->getPoint(1, $a, $precision), $mediaY, $precision),
+                    $precision
+                )
+            );
+            $dsx2 = bcadd(
+                $dsx2,
+                bcmul(
+                    bcsub($x->getPoint(1, $a, $precision), $mediaX, $precision),
+                    bcsub($x->getPoint(1, $a, $precision), $mediaX, $precision),
+                    $precision
+                ),
+                $precision
+            );
+            $dsy2 = bcadd(
+                $dsy2,
+                bcmul(
+                    bcsub($y->getPoint(1, $a, $precision), $mediaY, $precision),
+                    bcsub($y->getPoint(1, $a, $precision), $mediaY, $precision),
+                    $precision
+                ),
+                $precision
+            );
         }
 
-        $correlacion = $dpxy/sqrt($dsx2*$dsy2);
+        $correlacion = bcdiv(
+            $dpxy,
+            bcsqrt(
+                bcmul($dsx2, $dsy2, $precision),
+                $precision
+            ),
+            $precision
+        );
         return array(
             'tipo'        => $tipo,
             'B0'          => $ordenada,
             'B1'          => $pendiente,
             'correlacion' => $correlacion,
-            'r2'          => pow($correlacion, 2),
+            'r2'          => bcpow($correlacion, 2, $precision),
         );
     }
 
     public function regresionMultiple(MatrixBase $x, MatrixBase $y, $tipo = 'lineal')
     {
-        $ordenada    = 0;
-        $pendiente   = 0;
-        $correlacion = 0;
-
-        $newX = new MatrixBase($x->getNumRows()+1, $x->getNumCols());
+        $precision = $this->precision;
+        $newX = new MatrixBase($x->getNumRows()+1, $x->getNumCols(), $precision);
         for ($m=1; $m<=$newX->getNumRows(); $m++) {
             for ($n=1; $n<=$newX->getNumCols(); $n++) {
-                $newX->setPoint($m, $n, $m==1 ? 1 : $x->getPoint($m-1, $n));
+                $newX->setPoint($m, $n, $m==1 ? 1 : $x->getPoint($m-1, $n, $precision), $precision);
             }
         }
-        $B = new MatrixBase(1, $newX->getNumRows());
-        $P = new MatrixBase($newX->getNumRows(), $newX->getNumRows());
+        $B = new MatrixBase(1, $newX->getNumRows(), $precision);
+        $P = new MatrixBase($newX->getNumRows(), $newX->getNumRows(), $precision);
         for ($i=1; $i<=$newX->getNumRows(); $i++) {
-            $sum = 0;
+            $sum = bcadd(0, 0, $precision);
             for ($j = 1; $j <= $newX->getNumCols(); $j++) {
-                $sum += $newX->getPoint($i, $j) * $y->getPoint(1, $j);
+                $sum = bcadd(
+                    $sum,
+                    bcmul($newX->getPoint($i, $j, $precision), $y->getPoint(1, $j, $precision), $precision),
+                    $precision
+                );
             }
-            $B->setPoint(1, $i, $sum);
+            $B->setPoint(1, $i, $sum, $precision);
 
             for ($k=1; $k<=$newX->getNumRows(); $k++) {
-                $sum = 0;
+                $sum = bcadd(0, 0, $precision);
                 for ($j = 1; $j <= $newX->getNumCols(); $j++) {
-                    $sum += $newX->getPoint($i, $j) * $newX->getPoint($k, $j);
-                    $P->setPoint($i, $k, $sum);
+                    $sum = bcadd(
+                        $sum,
+                        bcmul($newX->getPoint($i, $j, $precision), $newX->getPoint($k, $j, $precision), $precision),
+                        $precision
+                    );
+                    $P->setPoint($i, $k, $sum, $precision);
                 }
             }
         }
         $P = $P->inversa();
         $R = array();
         for ($m=1; $m<=$P->getNumRows(); $m++) {
-            $sum = 0;
+            $sum = bcadd(0, 0, $precision);
             for ($n=1; $n<=$P->getNumCols(); $n++) {
-                $sum += $P->getPoint($m, $n) * $B->getPoint(1, $n);
+                $sum = bcadd(
+                    $sum,
+                    bcmul($P->getPoint($m, $n, $precision), $B->getPoint(1, $n, $precision), $precision),
+                    $precision
+                );
             }
             $R[$m] = $sum;
         }
 
         $result = array();
-        $result['tipo']        = $tipo;
+        $result['tipo'] = $tipo;
 
         for ($m=1; $m<=count($R); $m++) {
             $result['B'.($m-1)] = $R[$m];
@@ -380,26 +494,58 @@ class Regressions
         for ($n=1; $n<=$x->getNumCols(); $n++) {
             $Y = $R[1];
             for ($m=1; $m<=$x->getNumRows(); $m++) {
-                $Y += $R[$m+1] * $x->getPoint($m, $n);
+                $Y = bcadd($Y, bcmul($R[$m+1], $x->getPoint($m, $n, $precision), $precision), $precision);
             }
             $predicted[$n]  = $Y;
-            $residual[$n]   = $y->getPoint(1, $n) - $predicted[$n];
-            $SE            += $residual[$n];
-            $ST            += $y->getPoint(1, $n);
+            $residual[$n]   = bcsub($y->getPoint(1, $n, $precision), $predicted[$n], $precision);
+            $SE             = bcadd($SE, $residual[$n], $precision);
+            $ST             = bcadd($ST, $y->getPoint(1, $n, $precision), $precision);
         }
 
-        $MSE = $SE / $x->getNumCols();
-        $MST = $ST / $x->getNumCols();
-        $SSE = 0;
-        $SST = 0;
+        $MSE = bcdiv($SE, $x->getNumCols(), $precision);
+        $MST = bcdiv($ST, $x->getNumCols(), $precision);
+        $SSE = bcadd(0, 0, $precision);
+        $SST = bcadd(0, 0, $precision);
         for ($n=1; $n<=$x->getNumCols(); $n++) {
-            $SSE += ($residual[$n] - $MSE) * ($residual[$n] - $MSE);
-            $SST += ($y->getPoint(1, $n) - $MST) * ($y->getPoint(1, $n) - $MST);
+            $SSE = bcadd(
+                $SSE,
+                bcmul(
+                    bcsub($residual[$n], $MSE, $precision),
+                    bcsub($residual[$n], $MSE, $precision),
+                    $precision
+                ),
+                $precision
+            );
+            $SST = bcadd(
+                $SST,
+                bcmul(
+                    bcsub($y->getPoint(1, $n, $precision), $MST, $precision),
+                    bcsub($y->getPoint(1, $n, $precision), $MST, $precision),
+                    $precision
+                ),
+                $precision
+            );
         }
-        $FR = (($x->getNumCols() - $x->getNumRows() - 1) * ($SST - $SSE)) / ($x->getNumRows() * $SSE) ;
-        $RRSQ = 1 - ($SSE / $SST);
+        $FR = bcdiv(
+            bcmul(
+                bcsub(
+                    bcsub($x->getNumCols(), $x->getNumRows(), $precision),
+                    1,
+                    $precision
+                ),
+                bcsub($SST, $SSE, $precision),
+                $precision
+            ),
+            bcmul($x->getNumRows(), $SSE, $precision),
+            $precision
+        );
+        $RRSQ = bcsub(
+            1,
+            bcdiv($SSE, $SST, $precision),
+            $precision
+        );
 
-        $result['correlacion']  = pow($RRSQ, 1/2);
+        $result['correlacion']  = bcsqrt($RRSQ, $precision);
         $result['r2']           = $RRSQ;
         $result['estadisticoF'] = $FR;
         return $result;
