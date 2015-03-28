@@ -421,6 +421,91 @@ class Regressions
                 $newX->setPoint($m, $n, $m==1 ? 1 : $x->getPoint($m-1, $n, $precision), $precision);
             }
         }
+        $xx = $newX->multiplicationMatrix($newX->transposed());
+        $xy = $y->multiplicationMatrix($newX->transposed());
+        $b  = $xy->multiplicationMatrix($xx->inversa());
+
+        $result = array();
+        $result['tipo'] = $tipo;
+
+        for ($m=1; $m<=$b->getNumCols(); $m++) {
+            $result['B'.($m-1)] = $b->getPoint(1, $m, $precision);
+        }
+
+        $predicted = array();
+        $residual  = array();
+        $SE = 0;
+        $ST = 0;
+
+        for ($n=1; $n<=$x->getNumCols(); $n++) {
+            $Y = $b->getPoint(1, 1, $precision);
+            for ($m=1; $m<=$x->getNumRows(); $m++) {
+                $Y = bcadd($Y, bcmul($b->getPoint(1, $m+1), $x->getPoint($m, $n, $precision), $precision), $precision);
+            }
+            $predicted[$n]  = $Y;
+            $residual[$n]   = bcsub($y->getPoint(1, $n, $precision), $predicted[$n], $precision);
+            $SE             = bcadd($SE, $residual[$n], $precision);
+            $ST             = bcadd($ST, $y->getPoint(1, $n, $precision), $precision);
+        }
+
+        $MSE = bcdiv($SE, $x->getNumCols(), $precision);
+        $MST = bcdiv($ST, $x->getNumCols(), $precision);
+        $SSE = bcadd(0, 0, $precision);
+        $SST = bcadd(0, 0, $precision);
+        for ($n=1; $n<=$x->getNumCols(); $n++) {
+            $SSE = bcadd(
+                $SSE,
+                bcmul(
+                    bcsub($residual[$n], $MSE, $precision),
+                    bcsub($residual[$n], $MSE, $precision),
+                    $precision
+                ),
+                $precision
+            );
+            $SST = bcadd(
+                $SST,
+                bcmul(
+                    bcsub($y->getPoint(1, $n, $precision), $MST, $precision),
+                    bcsub($y->getPoint(1, $n, $precision), $MST, $precision),
+                    $precision
+                ),
+                $precision
+            );
+        }
+        $FR = bcdiv(
+            bcmul(
+                bcsub(
+                    bcsub($x->getNumCols(), $x->getNumRows(), $precision),
+                    1,
+                    $precision
+                ),
+                bcsub($SST, $SSE, $precision),
+                $precision
+            ),
+            bcmul($x->getNumRows(), $SSE, $precision),
+            $precision
+        );
+        $RRSQ = bcsub(
+            1,
+            bcdiv($SSE, $SST, $precision),
+            $precision
+        );
+
+        $result['correlacion']  = bcsqrt($RRSQ, $precision);
+        $result['r2']           = $RRSQ;
+        $result['estadisticoF'] = $FR;
+        return $result;
+    }
+/*
+    public function regresionMultiple(MatrixBase $x, MatrixBase $y, $tipo = 'lineal')
+    {
+        $precision = $this->precision;
+        $newX = new MatrixBase($x->getNumRows()+1, $x->getNumCols(), $precision);
+        for ($m=1; $m<=$newX->getNumRows(); $m++) {
+            for ($n=1; $n<=$newX->getNumCols(); $n++) {
+                $newX->setPoint($m, $n, $m==1 ? 1 : $x->getPoint($m-1, $n, $precision), $precision);
+            }
+        }
         $B = new MatrixBase(1, $newX->getNumRows(), $precision);
         $P = new MatrixBase($newX->getNumRows(), $newX->getNumRows(), $precision);
         for ($i=1; $i<=$newX->getNumRows(); $i++) {
@@ -533,4 +618,5 @@ class Regressions
         $result['estadisticoF'] = $FR;
         return $result;
     }
+*/
 }
