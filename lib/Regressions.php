@@ -141,14 +141,14 @@ class Regressions
     {
         $boxes = $this->independentVars->getNumRows() + $this->dependentVars->getNumRows();
         $drawSize = ($this->drawBoxSize + 1) * $boxes - 2;
-        $image = imagecreatetruecolor($drawSize, $drawSize);
-        $color = imagecolorallocate($image, 255, 255, 255);
-        imagefilledrectangle($image, 0, 0, $drawSize, $drawSize, $color);
+        $image = \imagecreatetruecolor($drawSize, $drawSize);
+        $color = \imagecolorallocate($image, 255, 255, 255);
+        \imagefilledrectangle($image, 0, 0, $drawSize, $drawSize, $color);
         $color = imagecolorallocate($image, 255, 0, 0);
         for ($a=1; $a<$boxes; $a++) {
             $pos = ($this->drawBoxSize + 1) * $a - 1;
-            imageline($image, 0, $pos, $drawSize, $pos, $color);
-            imageline($image, $pos, 0, $pos, $drawSize, $color);
+            \imageline($image, 0, $pos, $drawSize, $pos, $color);
+            \imageline($image, $pos, 0, $pos, $drawSize, $color);
         }
         for ($a=0; $a<$boxes; $a++) {
             if ($a==0) {
@@ -171,9 +171,9 @@ class Regressions
             );
         }
 
-        $colorPoint   = imagecolorallocate($image, 0, 0, 255);
-        $colorLine    = imagecolorallocate($image, 0, 255, 0);
-        $colorFormula = imagecolorallocate($image, 64, 64, 64);
+        $colorPoint   = \imagecolorallocate($image, 0, 0, 255);
+        $colorLine    = \imagecolorallocate($image, 0, 255, 0);
+        $colorFormula = \imagecolorallocate($image, 64, 64, 64);
 
         for ($a=0; $a<$boxes; $a++) {
             for ($b=0; $b<$boxes; $b++) {
@@ -207,7 +207,7 @@ class Regressions
         if (is_null($filename)) {
             $filename = 'test.png';
         }
-        imagepng($image, $filename);
+        \imagepng($image, $filename);
         return $filename;
     }
 
